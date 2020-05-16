@@ -20,11 +20,15 @@
         <div class="form-group">
           <div class="input-group">
             <% if currency.symbol_first %>
-                <span class="input-group-addon" id="basic-addon1"><%= currency.symbol %></span>
-                <%= text_field_tag 'refund_amount', @payment.amount, class: 'form-control' %>
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1"><%= currency.symbol %></span>
+              </div>
+              <%= text_field_tag 'refund_amount', @payment.amount, class: 'form-control' %>
             <% else %>
                 <%= text_field_tag 'refund_amount', @payment.amount, class: 'form-control' %>
-                <span class="input-group-addon" id="basic-addon1"><%= currency.symbol %></span>
+                <div class="input-group-append">
+                  <span class="basic-addon1 input-group-text"><%= currency.symbol %></span>
+                </div>
             <% end %>
           </div>
         </div>
