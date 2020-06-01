@@ -18,7 +18,7 @@ module Spree::Api::V2
           Quantity: 1,
           Amount: {
             currencyID: spree_current_order.currency,
-            value: adjustment.amount
+            value: coerce_money_amount(adjustment.amount)
           }
         }
       end
@@ -72,6 +72,11 @@ module Spree::Api::V2
 
     private
 
+    def coerce_money_amount(amount)
+      decimal = BigDecimal(amount, 9)
+      decimal.frac.zero? ? decimal.to_i : decimal
+    end
+
     def line_item(item)
       {
         Name: item.product.name,
@@ -79,7 +84,7 @@ module Spree::Api::V2
         Quantity: item.quantity,
         Amount: {
           currencyID: item.order.currency,
-          value: item.price
+          value: coerce_money_amount(item.price)
         }
         # ItemCategory: 'Physical'
       }
