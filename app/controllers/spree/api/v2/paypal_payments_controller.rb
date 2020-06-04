@@ -18,7 +18,7 @@ module Spree::Api::V2
           Quantity: 1,
           Amount: {
             currencyID: spree_current_order.currency,
-            value: coerce_money_amount(adjustment.amount)
+            value: to_money_amount(adjustment)
           }
         }
       end
@@ -52,7 +52,7 @@ module Spree::Api::V2
           source: Spree::PaypalExpressCheckout.create(
             { token: params[:token], payer_id: params[:PayerID] }
           ),
-          amount: spree_current_order.total,
+          amount: to_money_amount(spree_current_order.display_total),
           payment_method: payment_method
         }
       )
@@ -72,9 +72,14 @@ module Spree::Api::V2
 
     private
 
-    def coerce_money_amount(amount)
-      decimal = BigDecimal(amount, 9)
-      decimal.frac.zero? ? decimal.to_i : decimal
+    def to_money_amount(object)
+      case object
+      when Spree::Money then object.money.amount
+      when ::Money then object.amount
+      when 0 then object
+      else raise  ArgumentError,
+                  "#{object} is not of supported class for money amount"
+      end
     end
 
     def line_item(item)
@@ -84,7 +89,7 @@ module Spree::Api::V2
         Quantity: item.quantity,
         Amount: {
           currencyID: item.order.currency,
-          value: coerce_money_amount(item.price)
+          value: to_money_amount(item.display_price)
         }
         # ItemCategory: 'Physical'
       }
@@ -119,12 +124,18 @@ module Spree::Api::V2
     def payment_details(items)
       # This retrieves the cost of shipping after promotions are applied
       # For example, if shippng costs $10, and is free with a promotion, shipment_sum is now $10
-      shipment_sum = spree_current_order.shipments.map(&:discounted_cost).sum
+      shipment_sum =  spree_current_order
+                      .shipments
+                      .map { |shipment| shipment.display_discounted_cost.money }
+                      .sum
 
       # This calculates the item sum based upon what is in the order total, but not for shipping
       # or tax.  This is the easiest way to determine what the items should cost, as that
       # functionality doesn't currently exist in Spree core
-      item_sum = spree_current_order.total - shipment_sum - spree_current_order.additional_tax_total
+      item_sum =
+        spree_current_order.display_total.money -
+        shipment_sum -
+        spree_current_order.display_additional_tax_total.money
 
       if item_sum.zero?
         # Paypal does not support no items or a zero dollar ItemTotal
@@ -132,26 +143,27 @@ module Spree::Api::V2
         {
           OrderTotal: {
             currencyID: spree_current_order.currency,
-            value: spree_current_order.total
+            value: to_money_amount(spree_current_order.display_total)
           }
         }
       else
         {
           OrderTotal: {
             currencyID: spree_current_order.currency,
-            value: spree_current_order.total
+            value: to_money_amount(spree_current_order.display_total)
           },
           ItemTotal: {
             currencyID: spree_current_order.currency,
-            value: item_sum
+            value: to_money_amount(display_item_sum)
           },
           ShippingTotal: {
             currencyID: spree_current_order.currency,
-            value: shipment_sum
+            value: to_money_amount(display_shipment_sum)
           },
           TaxTotal: {
             currencyID: spree_current_order.currency,
-            value: spree_current_order.additional_tax_total
+            value:
+              to_money_amount(spree_current_order.display_additional_tax_total)
           },
           ShipToAddress: address_options,
           PaymentDetailsItem: items,
@@ -164,7 +176,8 @@ module Spree::Api::V2
     def address_options
       return {} unless address_required?
 
-      address_to_bill = spree_current_order.bill_address || spree_current_order.ship_address
+      address_to_bill =
+        spree_current_order.bill_address || spree_current_order.ship_address
       {
         Name: address_to_bill.try(:full_name),
         Street1: address_to_bill.address1,
