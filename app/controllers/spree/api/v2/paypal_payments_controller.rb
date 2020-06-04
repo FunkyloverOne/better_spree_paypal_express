@@ -154,11 +154,11 @@ module Spree::Api::V2
           },
           ItemTotal: {
             currencyID: spree_current_order.currency,
-            value: to_money_amount(display_item_sum)
+            value: to_money_amount(item_sum)
           },
           ShippingTotal: {
             currencyID: spree_current_order.currency,
-            value: to_money_amount(display_shipment_sum)
+            value: to_money_amount(shipment_sum)
           },
           TaxTotal: {
             currencyID: spree_current_order.currency,
