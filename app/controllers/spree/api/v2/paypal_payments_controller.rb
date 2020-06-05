@@ -18,7 +18,7 @@ module Spree::Api::V2
           Quantity: 1,
           Amount: {
             currencyID: spree_current_order.currency,
-            value: to_money_amount(adjustment)
+            value: to_money_amount(adjustment.display_amount)
           }
         }
       end
