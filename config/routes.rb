@@ -26,6 +26,16 @@ Spree::Core::Engine.add_routes do
         get 'notify'
       end
     end
+    
+    namespace :event_subscriptions do
+      resources :paypal_payments, only: [:create] do
+        collection do
+          post 'confirm'
+          post 'cancel'
+          get 'notify'
+        end
+      end
+    end
   end
 
   namespace :api do
