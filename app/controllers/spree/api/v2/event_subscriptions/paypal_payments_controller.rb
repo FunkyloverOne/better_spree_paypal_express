@@ -73,7 +73,7 @@ module Spree::Api::V2::EventSubscriptions
 
     def express_checkout_request_details(items)
       { SetExpressCheckoutRequestDetails: {
-        InvoiceID: @subscription.number,
+        InvoiceID: "#{@subscription.number}_#{rand(1000)}",
         BuyerEmail: @subscription.email || @subscription.user.email,
         # Here we tell paypal redirect to client and have the client post back status to rails server
         ReturnURL: confirm_url,
